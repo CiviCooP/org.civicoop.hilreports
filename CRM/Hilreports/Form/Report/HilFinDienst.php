@@ -186,6 +186,21 @@ class CRM_Hilreports_Form_Report_HilFinDienst extends CRM_Report_Form {
       array(
         'dao' => 'CRM_Case_DAO_CaseContact',
       ),
+      'civicrm_address' =>
+        array(
+          'dao' => 'CRM_Core_DAO_Address',
+          'fields' => array (
+             'postal_code' =>
+             array(
+               'title' => ts('Postal code'), 'default' => TRUE,
+             )
+          ),
+          'filters' =>  array('postal_code' =>
+             array(
+               'title' => ts('Postal code'),
+             )
+          ),
+        ),
     );
 
     parent::__construct();
@@ -233,6 +248,7 @@ class CRM_Hilreports_Form_Report_HilFinDienst extends CRM_Report_Form {
     $cr  = $this->_aliases['civicrm_relationship'];
     $crt = $this->_aliases['civicrm_relationship_type'];
     $ccc = $this->_aliases['civicrm_case_contact'];
+    $adr = $this->_aliases['civicrm_address'];
     if ($this->_relField) {
       $this->_from = "
             FROM civicrm_contact $c 
@@ -241,6 +257,7 @@ inner join civicrm_case $cc on ${cc}.id = ${cr}.case_id
 inner join civicrm_relationship_type $crt on ${crt}.id=${cr}.relationship_type_id AND ${crt}.id=$this->_dossierManagerRelationId
 inner join civicrm_case_contact $ccc on ${ccc}.case_id = ${cc}.id
 inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
+inner join civicrm_address $adr on ${adr}.contact_id = {$c2}.id
 ";
     }
     else {
