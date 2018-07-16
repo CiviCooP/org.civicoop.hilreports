@@ -133,9 +133,10 @@ class CRM_Hilreports_Form_Report_HilFinDienst extends CRM_Report_Form {
             'operatorType' => CRM_Report_Form::OP_DATE,
             'type' => CRM_Utils_Type::T_DATE,
           ),
-          'status_id' => array('title' => 'Dossiestatus',
+          'status_id' => array('title' => 'Dossierstatus',
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => $this->case_statuses,
+            'type' => CRM_Utils_Type::T_INT,
           ),
           'is_deleted' => array('title' => ts('Deleted?'),
             'type' => CRM_Report_Form::OP_INT,
@@ -168,6 +169,7 @@ class CRM_Hilreports_Form_Report_HilFinDienst extends CRM_Report_Form {
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'no_display' => TRUE,
             'options' => array(),
+            'type' => CRM_Utils_Type::T_INT,
           ),
         ),
       ),
@@ -301,9 +303,8 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
 
           if (!empty($clause)) {
             $clauses[] = $clause;
-            $clauses[] = "(case_civireport.case_type_id LIKE CONCAT ('%".
-              CRM_Core_DAO::VALUE_SEPARATOR."',".$this->_hilCaseTypeId.",'".
-              CRM_Core_DAO::VALUE_SEPARATOR ."%'))";
+            $clauses[] = "(case_civireport.case_type_id = {$this->_hilCaseTypeId} )";
+
           }
         }
       }
@@ -553,20 +554,23 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     if (empty($caseTypeName)) {
       $caseTypeId = 0;
     } else {
-      $optionGroupParams = array('name' => 'case_type', 'is_active' => 1, 'return' => 'id');
+      /*$optionGroupParams = array('name' => 'case_type', 'is_active' => 1, 'return' => 'id');
       try {
         $caseTypeOptionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
       } catch (CiviCRM_API3_Exception $ex) {
         throw new Exception('Could not find an option group with name case_type, '
           . 'error from API OptionGroup Getvalue : '.$ex->getMessage());
-      }
+      }*/
       $optionValueParams = array(
-        'option_group_id' => $caseTypeOptionGroupId, 
         'name' => $caseTypeName,
         'is_active' => 1,
         'return' => 'value');
       try {
-        $caseTypeId = civicrm_api3('OptionValue', 'Getvalue', $optionValueParams);
+        $caseTypeId = civicrm_api3('CaseType', 'Getvalue', array(
+          'name' => $caseTypeName,
+          'is_active' => 1,
+          'return' => 'id',
+        ));
       } catch (CiviCRM_API3_Exception $ex) {
         throw new Exception('Could not find a valid case type with name '.
           $caseTypeName.', error from API OptionValue Getvalue : '.$ex->getMessage());
@@ -606,7 +610,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       }
       $checkInkomen = $this->getCheckInkomen($row['civicrm_case_id']);
       if (!empty($checkInkomen)) {
-        $rows[$rowNum]['soort_inkomen'] = $checkInkomen['soort_inkomen'];
+        $rows[$rowNum]['soort_inkomen'] = $this->format($checkInkomen['soort_inkomen']);
         $rows[$rowNum]['status_inkomen'] = $checkInkomen['status_inkomen'];
         $rows[$rowNum]['opbrengst_inkomen'] = $checkInkomen['opbrengst_inkomen'];
         $rows[$rowNum]['opbrengst_belastingen'] = $checkInkomen['opbrengst_belastingen'];
@@ -715,6 +719,16 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     }
     return $checkInkomen;
   }
+
+  private function format($value){
+    $exploded = explode(CRM_Core_DAO::VALUE_SEPARATOR,$value);
+    foreach($exploded as $key=>$element){
+      if(empty($element)){
+        unset($exploded[$key]);
+      }
+    }
+    return implode(',',$exploded);
+  }
   /**
    * Function to get custom fields from Extra Gegevens
    * 
@@ -731,6 +745,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       $extraGegevens['burgerlijke_staat'] = $dao->{$this->_hilExtraGegevensColumns['burgerlijke_staat']};
       $extraGegevens['land_van_herkomst'] = $this->getCountryName($dao->{$this->_hilExtraGegevensColumns['land_van_herkomst']});
       $extraGegevens['economische_status'] = $dao->{$this->_hilExtraGegevensColumns['economische_status']};
+      $extraGegevens['economische_status'] = $this->format($extraGegevens['economische_status']);
     }
     return $extraGegevens;
   }
@@ -770,7 +785,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     } catch (CiviCRM_API3_Exception $ex) {
       $leeftijd = NULL;
     }
-    return $leeftijd['years'];
+    return $leeftijd['yearss'];
   }
   private function getGender($genderId) {
     $groupParams = array('name' => 'gender', 'return' => 'id');
