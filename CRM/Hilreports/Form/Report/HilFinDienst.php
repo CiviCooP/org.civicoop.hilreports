@@ -785,7 +785,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     } catch (CiviCRM_API3_Exception $ex) {
       $leeftijd = NULL;
     }
-    return $leeftijd['yearss'];
+    return isset($leeftijd['years'])?$leeftijd['years']:NULL;
   }
   private function getGender($genderId) {
     $groupParams = array('name' => 'gender', 'return' => 'id');
