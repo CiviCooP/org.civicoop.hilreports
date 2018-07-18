@@ -720,10 +720,17 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     return $checkInkomen;
   }
 
+  /**
+   * Replaces the Civi value seperator by a comma
+   *
+   * @param $value
+   *
+   * @return string where the value is replaced
+   */
   private function format($value){
     $exploded = explode(CRM_Core_DAO::VALUE_SEPARATOR,$value);
     foreach($exploded as $key=>$element){
-      if(empty($element)){
+      if(empty($element)){  // prevent replacing on the start and the end
         unset($exploded[$key]);
       }
     }
@@ -787,6 +794,13 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     }
     return isset($leeftijd['years'])?$leeftijd['years']:NULL;
   }
+
+  /**
+   * @param $genderId
+   *
+   * @return array|string Omschrijving van Gender
+   * @throws \Exception
+   */
   private function getGender($genderId) {
     $groupParams = array('name' => 'gender', 'return' => 'id');
     try {
