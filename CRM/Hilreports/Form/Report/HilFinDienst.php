@@ -750,6 +750,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     $dao = CRM_Core_DAO::executeQuery($query, $params);
     if ($dao->fetch()) {
       $extraGegevens['burgerlijke_staat'] = $dao->{$this->_hilExtraGegevensColumns['burgerlijke_staat']};
+      $extraGegevens['burgerlijke_staat'] = $this->getBurgerlijkeStaat($extraGegevens['burgerlijke_staat']);
       $extraGegevens['land_van_herkomst'] = $this->getCountryName($dao->{$this->_hilExtraGegevensColumns['land_van_herkomst']});
       $extraGegevens['economische_status'] = $dao->{$this->_hilExtraGegevensColumns['economische_status']};
       $extraGegevens['economische_status'] = $this->format($extraGegevens['economische_status']);
@@ -820,5 +821,27 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     }
     return $genderLabel;
   }
+
+  /**
+   * @param $valueId
+   *
+   * @return array|string Label of burgerlijkestaat
+   * @throws \Exception
+   */
+  private function getBurgerlijkeStaat($valueId) {
+
+    $valueParams = array(
+      'option_group_id' => 'burgerlijke_staat_20121114224021',
+      'value' => $valueId,
+      'return' => 'label');
+    try {
+      $label = civicrm_api3('OptionValue', 'Getvalue', $valueParams);
+    } catch (CiviCRM_API3_Exception $ex) {
+      $label = '';
+    }
+    return $label;
+  }
+
+
 }
 
