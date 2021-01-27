@@ -2,19 +2,19 @@
 <extension key="org.civicoop.hilreports" type="module">
   <file>hilreports</file>
   <name>CiviCRM rapporten Het Inter-lokaal (nu Bindkracht 10)</name>
-  <description>CiviCRM rapporten specifiek ontwikkeld voor Het Inter-lokaal</description>
+  <description>CiviCRM rapporten specifiek ontwikkeld voor Het Inter-lokaal (nu Bindkracht 10)</description>
   <license>Academic Free License 3.0</license>
   <maintainer>
     <author>CiviCooP</author>
     <email>helpdesk@civicoop.org</email>
   </maintainer>
-  <releaseDate>2018-07-27</releaseDate>
-  <version>1.2</version>
+  <releaseDate>2021-01-27</releaseDate>
+  <version>1.3</version>
   <develStage>Productie</develStage>
   <compatibility>
     <ver>4.2</ver>
   </compatibility>
-  <comments>This extension has been tested locally, to be tested by Het Inter-lokaal</comments>
+  <comments>This extension is in productie</comments>
   <civix>
     <namespace>CRM/Hilreports</namespace>
   </civix>

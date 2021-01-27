@@ -51,6 +51,10 @@ class CRM_Hilreports_Form_Report_HilFinDienst extends CRM_Report_Form {
   protected $_hilExtraGegevensGroupId = NULL;
   protected $_hilExtraGegevensTable = NULL;
   protected $_hilExtraGegevensColumns = array();
+  protected $_hilStadsdeelGroupId = NULL;
+  protected $_hilStadsdeelTable = NULL;
+  protected $_hilStadsdeelColumn = NULL;
+  protected $_hilStadsdeelOptionGroupId = NULL;
   protected $_hilCheckInkomenGroupId = NULL;
   protected $_hilCheckInkomenName = NULL;
   protected $_hilCheckInkomenTable = NULL;
@@ -253,7 +257,7 @@ class CRM_Hilreports_Form_Report_HilFinDienst extends CRM_Report_Form {
     $adr = $this->_aliases['civicrm_address'];
     if ($this->_relField) {
       $this->_from = "
-            FROM civicrm_contact $c 
+            FROM civicrm_contact $c
 inner join civicrm_relationship $cr on {$c}.id = ${cr}.contact_id_b
 inner join civicrm_case $cc on ${cc}.id = ${cr}.case_id
 inner join civicrm_relationship_type $crt on ${crt}.id=${cr}.relationship_type_id AND ${crt}.id=$this->_dossierManagerRelationId
@@ -331,7 +335,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     $rows = $graphRows = array();
     $this->buildRows($sql, $rows);
     $this->formatDisplay($rows);
-    
+
     $this->hilEnhanceRows($rows);
 
     $this->doTemplateAssignment($rows);
@@ -344,7 +348,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       if (array_key_exists('civicrm_c2_gender_id', $row)) {
         $rows[$rowNum]['civicrm_c2_gender_id'] = $this->getGender($row['civicrm_c2_gender_id']);
       }
-      
+
       if (array_key_exists('civicrm_case_status_id', $row)) {
         if ($value = $row['civicrm_case_status_id']) {
           $rows[$rowNum]['civicrm_case_status_id'] = $this->case_statuses[$value];
@@ -399,6 +403,22 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     $this->_hilExtraGegevensGroupId = $this->getCustomGroupId($this->_hilExtraGegevensName);
     $this->_hilExtraGegevensTable = $this->getCustomTableName($this->_hilExtraGegevensGroupId);
     $this->setHilExtraGegevensColumns();
+    $stadsdeelName = "locatie";
+    $this->_hilStadsdeelGroupId = $this->getCustomGroupId($stadsdeelName);
+    $this->_hilStadsdeelTable = $this->getCustomTableName($this->_hilStadsdeelGroupId);
+    try {
+      $stadsdeel = civicrm_api3('CustomField', 'getsingle', [
+        'custom_group_id' => $this->_hilStadsdeelGroupId,
+        'name' => 'locatie',
+        'return' => ['column_name', 'option_group_id'],
+      ]);
+      if ($stadsdeel) {
+        $this->_hilStadsdeelColumn = $stadsdeel['column_name'];
+        $this->_hilStadsdeelOptionGroupId = $stadsdeel['option_group_id'];
+      }
+    }
+    catch (CiviCRM_API3_Exception $ex) {
+    }
     $this->_hilCheckInkomenName = 'Check_inkomensrechten';
     $this->_hilCheckInkomenGroupId = $this->getCustomGroupId($this->_hilCheckInkomenName);
     $this->_hilCheckInkomenTable = $this->getCustomTableName($this->_hilCheckInkomenGroupId);
@@ -425,12 +445,12 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       $this->_hilOpenCaseActivityTypeId = civicrm_api3('OptionValue', 'Getvalue', $optionValueParams);
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find an option value for activity_type Open Case, '
-        . 'error from API OptionValue GetValue: '.$ex->getMessage());      
+        . 'error from API OptionValue GetValue: '.$ex->getMessage());
     }
   }
   /**
    * Function to set case status ids for aangemeld and lopend
-   * 
+   *
    * @throws Exception when no option group for case_status found
    */
   private function setHilCaseStatusIds() {
@@ -465,9 +485,6 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       switch($field['name']) {
         case 'Burgerlijke_staat':
           $this->_hilExtraGegevensColumns['burgerlijke_staat'] = $field['column_name'];
-          break;
-        case 'Land_van_herkomst':
-          $this->_hilExtraGegevensColumns['land_van_herkomst'] = $field['column_name'];
           break;
         case 'Economische_status2':
           $this->_hilExtraGegevensColumns['economische_status'] = $field['column_name'];
@@ -505,7 +522,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
   }
   /**
    * Function to retrieve table_name for custom_group
-   * 
+   *
    * @param int $customGroupId
    * @return string $customTableName
    */
@@ -574,18 +591,18 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       } catch (CiviCRM_API3_Exception $ex) {
         throw new Exception('Could not find a valid case type with name '.
           $caseTypeName.', error from API OptionValue Getvalue : '.$ex->getMessage());
-      }      
+      }
     }
     return $caseTypeId;
   }
   /*
-   * Function to add column headers 
+   * Function to add column headers
    */
   function modifyColumnHeaders() {
     $this->_columnHeaders['leeftijd'] = array('title' => ts('Age'), 'type' => 2);
     $this->_columnHeaders['burgerlijke_staat'] = array('title' => ts('Burg. Staat'), 'type' => 2);
-    $this->_columnHeaders['land_van_herkomst'] = array('title' => ts('Land van Herkomst'), 'type' => 2);
     $this->_columnHeaders['economische_status'] = array('title' => ts('Economische Status'), 'type' => 2);
+    $this->_columnHeaders['stadsdeel'] = array('title' => ts('Stadsdeel'), 'type' => 2);
     $this->_columnHeaders['soort_inkomen'] = array('title' => ts('Soort Inkomensrechten'), 'type' => 2);
     $this->_columnHeaders['status_inkomen'] = array('title' => ts('Status Inkomensrechten'), 'type' => 2);
     $this->_columnHeaders['opbrengst_inkomen'] = array('title' => ts('Opbrengst check inkomen'), 'type' => 2);
@@ -596,7 +613,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
   }
   /**
    * Function to enhance the rows selected with the specific Inter-Lokaal data
-   * 
+   *
    * @param array $rows
    */
   private function hilEnhanceRows(&$rows) {
@@ -605,9 +622,9 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       $extraGegevens = $this->getExtraGegevens($row['civicrm_c2_id']);
       if (!empty($extraGegevens)) {
         $rows[$rowNum]['burgerlijke_staat'] = $extraGegevens['burgerlijke_staat'];
-        $rows[$rowNum]['land_van_herkomst'] = $extraGegevens['land_van_herkomst'];
         $rows[$rowNum]['economische_status'] = $extraGegevens['economische_status'];
       }
+      $rows[$rowNum]['stadsdeel'] = $this->getStadsdeel($row['civicrm_case_id']);
       $checkInkomen = $this->getCheckInkomen($row['civicrm_case_id']);
       if (!empty($checkInkomen)) {
         $rows[$rowNum]['soort_inkomen'] = $this->format($checkInkomen['soort_inkomen']);
@@ -620,18 +637,40 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
       }
     }
   }
+
+  /**
+   * Method to get stadsdeel for case
+   *
+   * @param $caseId
+   * @return string
+   */
+  private function getStadsdeel($caseId) {
+    if ($this->_hilStadsdeelTable && $this->_hilStadsdeelColumn) {
+      $query = "SELECT b.label AS stadsdeel FROM " . $this->_hilStadsdeelTable . " AS a
+        LEFT JOIN civicrm_option_value AS b ON a." . $this->_hilStadsdeelColumn . " = b.value AND b.option_group_id = %1
+            WHERE a.entity_id = %2";
+      $stadsdeel = CRM_Core_DAO::singleValueQuery($query, [
+        1 => [(int) $this->_hilStadsdeelOptionGroupId, 'Integer'],
+        2 => [(int) $caseId, 'Integer'],
+      ]);
+      if ($stadsdeel) {
+        return $stadsdeel;
+      }
+    }
+    return '';
+  }
   /**
    * Function to get the open case date time for a case
-   * 
+   *
    * @param int $caseId
    * @return date
    */
   private function getOpenCase($caseId) {
-    $query = 
+    $query =
       'SELECT b.activity_date_time
         FROM civicrm_case_activity a
         JOIN civicrm_activity b ON a.activity_id = b.id
-        WHERE case_id = %1 AND b.is_current_revision = %2 
+        WHERE case_id = %1 AND b.is_current_revision = %2
         AND b.activity_type_id = %3';
     $params = array(
       1 => array($caseId, 'Positive'),
@@ -648,17 +687,17 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
   }
   /**
    * Function to get the change case status from aangemeld to lopend date time for a case
-   * 
+   *
    * @param int $caseId
    * @return date
    */
   private function getChangeAangemeldToLopend($caseId) {
     $retrievedDate = null;
-    $query = 
+    $query =
       'SELECT b.activity_date_time
         FROM civicrm_case_activity a
         JOIN civicrm_activity b ON a.activity_id = b.id
-        WHERE case_id = %1 AND b.is_current_revision = %2 
+        WHERE case_id = %1 AND b.is_current_revision = %2
         AND b.subject = %3';
     $params = array(
       1 => array($caseId, 'Positive'),
@@ -677,7 +716,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
   /**
    * Function to calculate time path between Open Case and Change Case Status from
    * aangemeld to lopend
-   * 
+   *
    * @param int $caseId
    * @return int $wachttijd
    */
@@ -699,7 +738,7 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
   }
   /**
    * Function to get custom fields from Check Inkomen
-   * 
+   *
    * @param int $entityId
    * @return array $checkInkomen
    */
@@ -736,9 +775,10 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     }
     return implode(',',$exploded);
   }
+
   /**
    * Function to get custom fields from Extra Gegevens
-   * 
+   *
    * @param int $entityId
    * @return array $extraGegevens
    */
@@ -751,33 +791,16 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
     if ($dao->fetch()) {
       $extraGegevens['burgerlijke_staat'] = $dao->{$this->_hilExtraGegevensColumns['burgerlijke_staat']};
       $extraGegevens['burgerlijke_staat'] = $this->getBurgerlijkeStaat($extraGegevens['burgerlijke_staat']);
-      $extraGegevens['land_van_herkomst'] = $this->getCountryName($dao->{$this->_hilExtraGegevensColumns['land_van_herkomst']});
       $extraGegevens['economische_status'] = $dao->{$this->_hilExtraGegevensColumns['economische_status']};
       $extraGegevens['economische_status'] = $this->format($extraGegevens['economische_status']);
     }
     return $extraGegevens;
   }
- /**
-   * Function to get the name of a country
-   * 
-   * @param int $countryId
-   * @return string $countryName
-   */
-  private function getCountryName($countryId) {
-    $params = array(
-      'id' => $countryId,
-      'return' => 'name');
-    try {
-      $countryName = civicrm_api3('Country', 'Getvalue', $params);
-    } catch (CiviCRM_API3_Exception $ex) {
-      $countryName = '';
-    }
-    return ts($countryName);
-  }
+
   /**
    * Function to calcute age
-   * @param type $contactId
-   * @return type
+   * @param int $contactId
+   * @return mixed
    */
   private function getLeeftijd($contactId) {
     $params = array(
@@ -811,8 +834,8 @@ inner join civicrm_contact $c2 on ${c2}.id=${ccc}.contact_id
         . 'from API OptionGroup Getvalue: '.$ex->getMessage());
     }
     $valueParams = array(
-      'option_group_id' => $genderGroupId, 
-      'value' => $genderId, 
+      'option_group_id' => $genderGroupId,
+      'value' => $genderId,
       'return' => 'label');
     try {
       $genderLabel = civicrm_api3('OptionValue', 'Getvalue', $valueParams);
